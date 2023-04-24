@@ -5,18 +5,11 @@ This is non-official ROS2 package for wit motion company imu and gps sensor.
 Tested with WitMotion WT901C RS232.
 
 
-## Dependencies and Install
+## Build
 
-1. ROS2 foxy
-2. ros-foxy-ecl-devices
-3. ros-foxy-ecl-sigslots
-4. ros-foxy-ecl-time
-5. ros-foxy-ecl-build
-6. ros-foxy-ecl-geometry
+### for Foxy
 
-
-Install ecl by
-
+#### Install dependencies
 ```bash
 sudo apt install ros-foxy-ecl-devices \
                  ros-foxy-ecl-sigslots \
@@ -25,15 +18,32 @@ sudo apt install ros-foxy-ecl-devices \
                  ros-foxy-ecl-geometry
 ```
 
+#### Build
+
 ```bash
 source /opt/ros/foxy/setup.bash
-mkdir -p ~/ros2_ws/src
 cd ~/ros2_ws/src
-git clone -b ros2 https://github.com/fateshelled/wit_node
+git clone https://github.com/fateshelled/wit_node -b ros2 
 cd ~/ros2_ws
 colcon build --symlink-install
 ```
 
+### for Humble
+
+#### Install dependencies and build wit_node
+```bash
+sudo apt install ros-humble-sophus
+
+source /opt/ros/foxy/setup.bash
+cd ~/ros2_ws/src
+git clone https://github.com/stonier/ecl_core -b devel
+git clone https://github.com/stonier/ecl_tools -b devel
+git clone https://github.com/stonier/ecl_lite -b devel
+
+git clone https://github.com/fateshelled/wit_node -b ros2
+cd ~/ros2_ws
+colcon build --symlink-install
+```
 
 
 ## Usage

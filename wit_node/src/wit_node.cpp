@@ -28,18 +28,17 @@ namespace wit
         this->publish_hz = this->declare_parameter<double>("publish_hz", this->publish_hz);
 
         RCLCPP_INFO(this->get_logger(), 
-                    "port: " + this->wit_param_.port_);
+                    "port: %s", this->wit_param_.port_.c_str());
         RCLCPP_INFO(this->get_logger(), 
-                    "baud_rate: " + std::to_string(this->wit_param_.baud_rate_));
+                    "baud_rate: %d", this->wit_param_.baud_rate_);
         RCLCPP_INFO(this->get_logger(), 
-                    "frame_id: " + this->frame_id);
+                    "frame_id: %s", this->frame_id.c_str());
         RCLCPP_INFO(this->get_logger(), 
-                    "publish_hz: " + std::to_string(this->publish_hz));
+                    "publish_hz: %2.1f", this->publish_hz);
     }
     bool WitNode::init()
     {
-        RCLCPP_INFO(this->get_logger(),
-                    "initializing...");
+        RCLCPP_INFO(this->get_logger(), "initializing...");
         this->initializeParameter();
         this->createPublishers();
         this->createSubscrptions();
@@ -63,7 +62,7 @@ namespace wit
 
                 RCLCPP_ERROR(
                     this->get_logger(), 
-                    "Could not open connection ["+ this->wit_param_.port_ + "].");
+                    "Could not open connection [ %s ].", this->wit_param_.port_.c_str());
                 break;
             }
             default:
