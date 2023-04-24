@@ -30,17 +30,21 @@ colcon build --symlink-install
 
 ### for Humble
 
-#### Install dependencies and build wit_node
+#### Install dependencies
 ```bash
 sudo apt install ros-humble-sophus
+```
 
-source /opt/ros/foxy/setup.bash
+#### Build dependencies and wit_node
+```
+source /opt/ros/humble/setup.bash
 cd ~/ros2_ws/src
 git clone https://github.com/stonier/ecl_core -b devel
 git clone https://github.com/stonier/ecl_tools -b devel
 git clone https://github.com/stonier/ecl_lite -b devel
 
 git clone https://github.com/fateshelled/wit_node -b ros2
+
 cd ~/ros2_ws
 colcon build --symlink-install
 ```
