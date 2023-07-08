@@ -38,22 +38,21 @@ namespace wit
 
         /*********************
          ** Variables
-        **********************/
+         **********************/
         void initializeParameter();
         Parameter wit_param_;
 
         /*********************
          ** Ros Publishers
-        **********************/
+         **********************/
         void createPublishers();
 
         /*********************
          ** Ros Subscribers
-        **********************/
+         **********************/
         void createSubscrptions();
         void subscribeResetOffset(const std_msgs::msg::Empty::ConstSharedPtr msg);
         rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr reset_offset_sub_;
-
     };
 }
 

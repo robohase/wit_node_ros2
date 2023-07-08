@@ -4,15 +4,17 @@
 namespace wit
 {
 
-    WitNode::WitNode(const rclcpp::NodeOptions& options)
-    : WitNode::WitNode("", options)
-    {}
-
-    WitNode::WitNode(const std::string &node_name, const rclcpp::NodeOptions& options)
-    : rclcpp::Node("wit_ros", node_name, options)
+    WitNode::WitNode(const rclcpp::NodeOptions &options)
+        : WitNode::WitNode("", options)
     {
-        if(this->init() == false){
-            rclcpp::shutdown(nullptr);
+    }
+
+    WitNode::WitNode(const std::string &node_name, const rclcpp::NodeOptions &options)
+        : rclcpp::Node("wit_ros", node_name, options)
+    {
+        if (this->init() == false)
+        {
+            rclcpp::shutdown();
         };
     }
     WitNode::~WitNode()
@@ -27,13 +29,13 @@ namespace wit
         this->frame_id = this->declare_parameter<std::string>("frame_id", this->frame_id);
         this->publish_hz = this->declare_parameter<double>("publish_hz", this->publish_hz);
 
-        RCLCPP_INFO(this->get_logger(), 
+        RCLCPP_INFO(this->get_logger(),
                     "port: %s", this->wit_param_.port_.c_str());
-        RCLCPP_INFO(this->get_logger(), 
+        RCLCPP_INFO(this->get_logger(),
                     "baud_rate: %d", this->wit_param_.baud_rate_);
-        RCLCPP_INFO(this->get_logger(), 
+        RCLCPP_INFO(this->get_logger(),
                     "frame_id: %s", this->frame_id.c_str());
-        RCLCPP_INFO(this->get_logger(), 
+        RCLCPP_INFO(this->get_logger(),
                     "publish_hz: %2.1f", this->publish_hz);
     }
     bool WitNode::init()
@@ -45,7 +47,7 @@ namespace wit
 
         /*********************
          ** Driver Init
-        **********************/
+         **********************/
         try
         {
             wd = std::make_unique<wit::WitDriver>();
@@ -61,17 +63,17 @@ namespace wit
             {
 
                 RCLCPP_ERROR(
-                    this->get_logger(), 
+                    this->get_logger(),
                     "Could not open connection [ %s ].", this->wit_param_.port_.c_str());
                 break;
             }
             default:
             {
                 RCLCPP_ERROR(
-                    this->get_logger(), 
+                    this->get_logger(),
                     "Initialization failed. Please restart.");
                 RCLCPP_ERROR(
-                    this->get_logger(), 
+                    this->get_logger(),
                     e.what());
                 break;
             }
@@ -105,12 +107,21 @@ namespace wit
     }
 }
 
-int main(int argc, char * argv[])
+int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);
     rclcpp::NodeOptions node_options;
     auto node = std::make_shared<wit::WitNode>(node_options);
     rclcpp::WallRate rate(node->publish_hz);
+
+    std_msgs::msg::Header header;
+    std_msgs::msg::Float64 yaw_msg;
+    sensor_msgs::msg::Imu imu_msg;
+    tf2::Quaternion q_tf2;
+    geometry_msgs::msg::PoseStamped imu_pose;
+    sensor_msgs::msg::NavSatFix gps_msg;
+    wit_msgs::msg::ImuGpsRaw raw_msg;
+
     while (rclcpp::ok())
     {
         if (node->wd->isShutdown())
@@ -123,60 +134,62 @@ int main(int argc, char * argv[])
         if (!node->wd->isConnected())
         {
             RCLCPP_ERROR(
-                node->get_logger(), 
+                node->get_logger(),
                 "arm serial port is not connetced, please connect the arm.");
             break;
         }
 
-        std_msgs::msg::Header header;
+        // header
         header.frame_id = node->frame_id;
         header.stamp = rclcpp::Clock().now();
+
+        // get raw data
         wit::Data::IMUGPS data = node->wd->getData();
-        
-        std_msgs::msg::Float64 yaw_msg;
+
+        // yaw
         yaw_msg.data = node->wd->getRelatedYaw();
 
-        sensor_msgs::msg::Imu imu_msg;
+        // imu
         imu_msg.header = header;
-        // gyro
+        // imu gyro
         imu_msg.angular_velocity.x = data.w[0];
         imu_msg.angular_velocity.y = data.w[1];
         imu_msg.angular_velocity.z = data.w[2];
-        // acc
+        // imu acc
         imu_msg.linear_acceleration.x = data.a[0];
         imu_msg.linear_acceleration.y = data.a[1];
         imu_msg.linear_acceleration.z = data.a[2];
 
-        tf2::Quaternion q_tf2;
+        // imu orientarion
         q_tf2.setRPY(data.rpy[0], data.rpy[1], data.rpy[2]);
         imu_msg.orientation = tf2::toMsg(q_tf2);
         imu_msg.orientation_covariance =
             {0.001, 0.0, 0.0,
-                0.0, 0.001, 0.0,
-                0.0, 0.0, 0.001};
+             0.0, 0.001, 0.0,
+             0.0, 0.0, 0.001};
         imu_msg.angular_velocity_covariance =
             {0.00001, 0.0, 0.0,
-                0.0, 0.00001, 0.0,
-                0.0, 0.0, 0.00001};
+             0.0, 0.00001, 0.0,
+             0.0, 0.0, 0.00001};
         imu_msg.linear_acceleration_covariance =
             {0.01, 0.0, 0.0,
-                0.0, 0.01, 0.0,
-                0.0, 0.0, 0.01};
+             0.0, 0.01, 0.0,
+             0.0, 0.0, 0.01};
 
-        geometry_msgs::msg::PoseStamped imu_pose;
+        // pose
         imu_pose.header = header;
         imu_pose.pose.orientation = imu_msg.orientation;
-        
-        sensor_msgs::msg::NavSatFix gps_msg;
+
+        // gps
         gps_msg.header = header;
         gps_msg.altitude = data.altitude;
         gps_msg.latitude = data.latitude;
         gps_msg.longitude = data.longtitude;
         gps_msg.position_covariance_type = sensor_msgs::msg::NavSatFix::COVARIANCE_TYPE_UNKNOWN;
 
-        wit_msgs::msg::ImuGpsRaw raw_msg;
+        // raw
         raw_msg.header = header;
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 3; ++i)
         {
             raw_msg.acc.push_back(data.a[i]);
             raw_msg.gyro.push_back(data.w[i]);
@@ -184,7 +197,7 @@ int main(int argc, char * argv[])
             raw_msg.mag.push_back(data.mag[i]);
             raw_msg.dop.push_back(data.gpsa[i]);
         }
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 4; ++i)
         {
             raw_msg.ps.push_back(data.d[i]);
             raw_msg.quarternion.push_back(data.q[i]);
@@ -200,18 +213,20 @@ int main(int argc, char * argv[])
         raw_msg.time = data.timestamp;
         raw_msg.temperature = data.temperature;
 
+        // publish
         node->imu_pub->publish(imu_msg);
         node->gps_pub->publish(gps_msg);
         node->raw_data_pub->publish(raw_msg);
         node->related_yaw_pub->publish(yaw_msg);
         node->imu_pose_pub->publish(imu_pose);
 
-        if(!rclcpp::ok()) {
+        if (!rclcpp::ok())
+        {
             break;
         }
         rclcpp::spin_some(node);
         rate.sleep();
     }
-    rclcpp::shutdown(nullptr);
+    rclcpp::shutdown();
     return 0;
 }
