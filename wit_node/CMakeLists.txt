@@ -9,6 +9,8 @@ endif()
 # Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+  set(CMAKE_CXX_EXTENSIONS OFF)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -16,45 +18,11 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 # find dependencies
-find_package(ament_cmake REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(rclcpp_components REQUIRED)
-find_package(std_msgs REQUIRED)
-find_package(geometry_msgs REQUIRED)
-find_package(sensor_msgs REQUIRED)
-find_package(tf2 REQUIRED)
-find_package(tf2_geometry_msgs REQUIRED)
-find_package(wit_msgs REQUIRED)
-find_package(wit_driver REQUIRED)
+find_package(ament_cmake_auto REQUIRED)
+ament_auto_find_build_dependencies()
 
-# executable
-add_executable(wit_node
+ament_auto_add_executable(wit_node
   src/wit_node.cpp
-)
-ament_target_dependencies(wit_node
-  rclcpp
-  std_msgs
-  geometry_msgs
-  sensor_msgs
-  tf2
-  tf2_geometry_msgs
-  wit_msgs
-  wit_driver
-)
-target_include_directories(wit_node PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
-install(TARGETS
-wit_node
-  DESTINATION lib/${PROJECT_NAME}
-)
-
-
-install(DIRECTORY
-  launch
-  rviz2
-  DESTINATION share/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)
@@ -62,4 +30,8 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_package()
+ament_auto_package(
+  INSTALL_TO_SHARE
+  launch
+  rviz2
+)

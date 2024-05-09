@@ -1,5 +1,5 @@
 #include "wit_node/wit_node.hpp"
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 namespace wit
 {
@@ -16,6 +16,8 @@ namespace wit
         {
             rclcpp::shutdown();
         };
+        const std::chrono::duration<double> dt(1.0 / this->publish_hz);
+        timer_ = this->create_wall_timer(dt, std::bind(&WitNode::timer_callback, this));
     }
     WitNode::~WitNode()
     {
@@ -105,49 +107,41 @@ namespace wit
         wd->resetYawOffset();
         RCLCPP_INFO(this->get_logger(), "~/resetYawOffset.");
     }
-}
 
-int main(int argc, char *argv[])
-{
-    rclcpp::init(argc, argv);
-    rclcpp::NodeOptions node_options;
-    auto node = std::make_shared<wit::WitNode>(node_options);
-    rclcpp::WallRate rate(node->publish_hz);
-
-    std_msgs::msg::Header header;
-    std_msgs::msg::Float64 yaw_msg;
-    sensor_msgs::msg::Imu imu_msg;
-    tf2::Quaternion q_tf2;
-    geometry_msgs::msg::PoseStamped imu_pose;
-    sensor_msgs::msg::NavSatFix gps_msg;
-    wit_msgs::msg::ImuGpsRaw raw_msg;
-
-    while (rclcpp::ok())
+    void WitNode::timer_callback()
     {
-        if (node->wd->isShutdown())
+        std_msgs::msg::Header header;
+        std_msgs::msg::Float64 yaw_msg;
+        sensor_msgs::msg::Imu imu_msg;
+        tf2::Quaternion q_tf2;
+        geometry_msgs::msg::PoseStamped imu_pose;
+        sensor_msgs::msg::NavSatFix gps_msg;
+        wit_msgs::msg::ImuGpsRaw raw_msg;
+
+        if (this->wd->isShutdown())
         {
             RCLCPP_ERROR(
-                node->get_logger(),
+                this->get_logger(),
                 "Driver has been shutdown. Stopping update loop.");
-            break;
+            rclcpp::shutdown();
         }
-        if (!node->wd->isConnected())
+        if (!this->wd->isConnected())
         {
             RCLCPP_ERROR(
-                node->get_logger(),
+                this->get_logger(),
                 "arm serial port is not connetced, please connect the arm.");
-            break;
+            rclcpp::shutdown();
         }
 
         // header
-        header.frame_id = node->frame_id;
+        header.frame_id = this->frame_id;
         header.stamp = rclcpp::Clock().now();
 
         // get raw data
-        wit::Data::IMUGPS data = node->wd->getData();
+        wit::Data::IMUGPS data = this->wd->getData();
 
         // yaw
-        yaw_msg.data = node->wd->getRelatedYaw();
+        yaw_msg.data = this->wd->getRelatedYaw();
 
         // imu
         imu_msg.header = header;
@@ -165,16 +159,16 @@ int main(int argc, char *argv[])
         imu_msg.orientation = tf2::toMsg(q_tf2);
         imu_msg.orientation_covariance =
             {0.001, 0.0, 0.0,
-             0.0, 0.001, 0.0,
-             0.0, 0.0, 0.001};
+            0.0, 0.001, 0.0,
+            0.0, 0.0, 0.001};
         imu_msg.angular_velocity_covariance =
             {0.00001, 0.0, 0.0,
-             0.0, 0.00001, 0.0,
-             0.0, 0.0, 0.00001};
+            0.0, 0.00001, 0.0,
+            0.0, 0.0, 0.00001};
         imu_msg.linear_acceleration_covariance =
             {0.01, 0.0, 0.0,
-             0.0, 0.01, 0.0,
-             0.0, 0.0, 0.01};
+            0.0, 0.01, 0.0,
+            0.0, 0.0, 0.01};
 
         // pose
         imu_pose.header = header;
@@ -214,19 +208,20 @@ int main(int argc, char *argv[])
         raw_msg.temperature = data.temperature;
 
         // publish
-        node->imu_pub->publish(imu_msg);
-        node->gps_pub->publish(gps_msg);
-        node->raw_data_pub->publish(raw_msg);
-        node->related_yaw_pub->publish(yaw_msg);
-        node->imu_pose_pub->publish(imu_pose);
-
-        if (!rclcpp::ok())
-        {
-            break;
-        }
-        rclcpp::spin_some(node);
-        rate.sleep();
+        this->imu_pub->publish(imu_msg);
+        this->gps_pub->publish(gps_msg);
+        this->raw_data_pub->publish(raw_msg);
+        this->related_yaw_pub->publish(yaw_msg);
+        this->imu_pose_pub->publish(imu_pose);
     }
+}
+
+int main(int argc, char *argv[])
+{
+    rclcpp::init(argc, argv);
+    rclcpp::NodeOptions node_options;
+    auto node = std::make_shared<wit::WitNode>(node_options);
+    rclcpp::spin(node);
     rclcpp::shutdown();
     return 0;
 }

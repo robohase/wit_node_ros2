@@ -9,6 +9,8 @@ endif()
 # Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+  set(CMAKE_CXX_EXTENSIONS OFF)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -16,17 +18,11 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 # find dependencies
-find_package(ament_cmake REQUIRED)
-find_package(std_msgs REQUIRED)
-find_package(sensor_msgs REQUIRED)
-find_package(ecl_devices REQUIRED)
-find_package(ecl_sigslots REQUIRED)
-find_package(ecl_time REQUIRED)
-find_package(ecl_build REQUIRED)
-find_package(ecl_geometry REQUIRED)
+find_package(ament_cmake_auto REQUIRED)
+ament_auto_find_build_dependencies()
 
 # add shared library
-add_library(wit_driver SHARED
+ament_auto_add_library(wit_driver SHARED
   src/wit_driver.cpp
   src/command.cpp
   src/data.cpp
@@ -42,43 +38,8 @@ target_include_directories(wit_driver PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
-ament_target_dependencies(wit_driver
-  ecl_devices
-  ecl_sigslots
-  ecl_time
-  ecl_build
-  ecl_geometry
-)
-
-if(NOT WIN32)
-  ament_environment_hooks(
-    "${ament_cmake_package_templates_ENVIRONMENT_HOOK_LIBRARY_PATH}"
-  )
-endif()
-
-ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
-ament_export_dependencies(
-  ecl_devices
-  ecl_sigslots
-  ecl_time
-  ecl_build
-  ecl_geometry
-)
-install(TARGETS wit_driver
-  EXPORT export_${PROJECT_NAME}
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin
-  INCLUDES DESTINATION include
-)
-
-install(DIRECTORY
-  DESTINATION share/${PROJECT_NAME}
-)
-install(
-  DIRECTORY include/
-  DESTINATION include
-)
+ament_target_dependencies(wit_driver ${TARGET_DPENDENCIES})
+ament_export_dependencies(${TARGET_DPENDENCIES})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -91,4 +52,4 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_package()
+ament_auto_package()

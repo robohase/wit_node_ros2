@@ -10,17 +10,11 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>rclcpp</depend>
-  <depend>rclcpp_components</depend>
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>tf2</depend>
   <depend>tf2_geometry_msgs</depend>
-  <depend>ecl_devices</depend>
-  <depend>ecl_sigslots</depend>
-  <depend>ecl_time</depend>
-  <depend>ecl_build</depend>
-  <depend>ecl_geometry</depend>
   <depend>wit_msgs</depend>
   <depend>wit_driver</depend>
 

@@ -52,7 +52,10 @@ namespace wit
          **********************/
         void createSubscrptions();
         void subscribeResetOffset(const std_msgs::msg::Empty::ConstSharedPtr msg);
+
+        void timer_callback();
         rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr reset_offset_sub_;
+        rclcpp::TimerBase::SharedPtr timer_;
     };
 }
 
