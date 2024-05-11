@@ -22,7 +22,7 @@ namespace wit
     WitNode::~WitNode()
     {
         RCLCPP_INFO(this->get_logger(), "Waiting for WitDriver finish.");
-        wd->shutdown();
+        wd_->shutdown();
     }
     void WitNode::initializeParameter()
     {
@@ -52,8 +52,8 @@ namespace wit
          **********************/
         try
         {
-            wd = std::make_unique<wit::WitDriver>();
-            wd->init(this->wit_param_);
+            wd_ = std::make_unique<wit::WitDriver>();
+            wd_->init(this->wit_param_);
             rclcpp::WallRate rate(100ms);
             rate.sleep();
         }
@@ -102,9 +102,9 @@ namespace wit
             std::bind(&WitNode::subscribeResetOffset,
                       this, std::placeholders::_1));
     }
-    void WitNode::subscribeResetOffset(const std_msgs::msg::Empty::ConstSharedPtr msg)
+    void WitNode::subscribeResetOffset(const std_msgs::msg::Empty::ConstSharedPtr)
     {
-        wd->resetYawOffset();
+        wd_->resetYawOffset();
         RCLCPP_INFO(this->get_logger(), "~/resetYawOffset.");
     }
 
@@ -118,14 +118,14 @@ namespace wit
         sensor_msgs::msg::NavSatFix gps_msg;
         wit_msgs::msg::ImuGpsRaw raw_msg;
 
-        if (this->wd->isShutdown())
+        if (this->wd_->isShutdown())
         {
             RCLCPP_ERROR(
                 this->get_logger(),
                 "Driver has been shutdown. Stopping update loop.");
             rclcpp::shutdown();
         }
-        if (!this->wd->isConnected())
+        if (!this->wd_->isConnected())
         {
             RCLCPP_ERROR(
                 this->get_logger(),
@@ -138,10 +138,10 @@ namespace wit
         header.stamp = rclcpp::Clock().now();
 
         // get raw data
-        wit::Data::IMUGPS data = this->wd->getData();
+        wit::Data::IMUGPS data = this->wd_->getData();
 
         // yaw
-        yaw_msg.data = this->wd->getRelatedYaw();
+        yaw_msg.data = this->wd_->getRelatedYaw();
 
         // imu
         imu_msg.header = header;
