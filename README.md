@@ -1,4 +1,4 @@
-# wit_node
+# wit_node_ros2
 
 This is unofficial ROS2 package for wit motion company imu and gps sensor.
 
@@ -20,7 +20,7 @@ git clone https://github.com/stonier/ecl_core -b devel
 git clone https://github.com/stonier/ecl_tools -b devel
 git clone https://github.com/stonier/ecl_lite -b devel
 
-git clone https://github.com/fateshelled/wit_node -b ros2
+git clone https://github.com/fateshelled/wit_node_ros2
 
 cd ~/ros2_ws
 colcon build --symlink-install
