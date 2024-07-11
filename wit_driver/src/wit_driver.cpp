@@ -70,9 +70,9 @@ ecl::BaudRate int_to_BaudRate(int rate){
 }
 
 WitDriver::WitDriver()
-    : shutdown_requested_(false),
-      connected_(false),
+    : connected_(false),
       alive_(false),
+      shutdown_requested_(false),
       yaw_offset_(0.0 / 0.0) {}
 
 /**
@@ -168,12 +168,12 @@ void WitDriver::spin() {
     /*********************
      ** Read Incoming
      **********************/
-    int n = serial.read((char *)buf, 1);
+    const int n = serial.read((char *)buf, 1);
     //    std::cout << int(buf[0]) << std::endl;
     if (n == 0) {
       continue;
     }
-    bool find_packet = packet_finder.update(buf, n);
+    const bool find_packet = packet_finder.update(buf, n);
 
     if (find_packet) {
       PacketFinder::BufferType local_buffer;

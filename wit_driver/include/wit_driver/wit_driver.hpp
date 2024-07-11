@@ -11,7 +11,6 @@
 #include <iomanip>
 #include <iostream>
 #include <string>
-//#include "command.hpp"
 #include "data.hpp"
 #include "packet_handler/packet_finder.hpp"
 #include "parameter.hpp"
@@ -47,13 +46,13 @@ class WitDriver {
   //初始化
   void init(Parameter &param);
   //  检查是否连接上通信串口
-  bool isConnected() { return connected_; }
+  bool isConnected() const { return connected_; }
   //  关闭接口
   void shutdown() { shutdown_requested_ = true; }
   bool isShutdown() const { return shutdown_requested_; }
   double getRelatedYaw() const { return relate_yaw_; }
 
-  bool isAlive() { return alive_; }
+  bool isAlive() const { return alive_; }
   void resetYawOffset() { yaw_offset_ = data_.imugps_.rpy[2]; }
   //底盘数据流控制程序，运行于thread线程中
   void spin();

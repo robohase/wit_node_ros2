@@ -24,24 +24,25 @@ namespace wit {
 ** Implementation
 *****************************************************************************/
 
-bool Data::serialise(ecl::PushAndPop<unsigned char> &byteStream) { return true; }
+bool Data::serialise(ecl::PushAndPop<unsigned char> &) { return true; }
 
 bool Data::desTime(ecl::PushAndPop<unsigned char> &byteStream) {
-  uint8_t tmpL, tmpH;
-  uint16_t tmp;
+  uint8_t tmpL = 0;
+  // uint8_t tmpH;
+  uint16_t tmp = 0;
   buildVariable(tmpL, byteStream); // 20YY
                                    //  std::cout << int(tmpL) << std::endl;
   buildVariable(tmpL, byteStream); // MM
   buildVariable(tmpL, byteStream); // DD
-  imugps_.timestamp = tmpL * 24 * 60 * 60.0;
+  imugps_.timestamp = static_cast<double>(tmpL) * (24.0 * 60.0 * 60.0);
   buildVariable(tmpL, byteStream); // HH
-  imugps_.timestamp += tmpL * 60 * 60.0;
+  imugps_.timestamp += static_cast<double>(tmpL) * (60.0 * 60.0);
   buildVariable(tmpL, byteStream); // MM
-  imugps_.timestamp += tmpL * 60.0;
+  imugps_.timestamp += static_cast<double>(tmpL) * 60.0;
   buildVariable(tmpL, byteStream); // SS
-  imugps_.timestamp += tmpL;
+  imugps_.timestamp += static_cast<double>(tmpL);
   buildVariable(tmp, byteStream); // MSL,MSH
-  imugps_.timestamp += tmp / 1000.0;
+  imugps_.timestamp += tmp * 0.001;
   if (byteStream.size() == 0) {
     //    std::cout << imugps_.timestamp << std::endl;
     return true;
@@ -51,15 +52,15 @@ bool Data::desTime(ecl::PushAndPop<unsigned char> &byteStream) {
 }
 
 bool Data::desAcce(ecl::PushAndPop<unsigned char> &byteStream) {
-  int16_t tmp;
+  int16_t tmp = 0;
   buildVariable(tmp, byteStream); // accx
-  imugps_.a[0] = tmp * 16 * 9.8 / 32768;
+  imugps_.a[0] = static_cast<double>(tmp) * (16.0 * 9.8 / 32768.0);
   buildVariable(tmp, byteStream); // accy
-  imugps_.a[1] = tmp * 16 * 9.8 / 32768;
+  imugps_.a[1] = static_cast<double>(tmp) * (16.0 * 9.8 / 32768.0);
   buildVariable(tmp, byteStream); // accz
-  imugps_.a[2] = tmp * 16 * 9.8 / 32768;
+  imugps_.a[2] = static_cast<double>(tmp) * (16.0 * 9.8 / 32768.0);
   buildVariable(tmp, byteStream);
-  imugps_.temperature = tmp / 100.0;
+  imugps_.temperature = static_cast<double>(tmp) * 0.01;
   if (byteStream.size() == 0) {
     //    std::cout << imugps_.a[2] << std::endl;
     return true;
@@ -68,15 +69,15 @@ bool Data::desAcce(ecl::PushAndPop<unsigned char> &byteStream) {
   }
 }
 bool Data::desGyro(ecl::PushAndPop<unsigned char> &byteStream) {
-  int16_t tmp;
+  int16_t tmp = 0;
   buildVariable(tmp, byteStream); // wx
-  imugps_.w[0] = tmp * 2000.0 * 3.1415926 / (32768 * 180.0);
+  imugps_.w[0] = static_cast<double>(tmp) * (2000.0 * 3.1415926 / (32768.0 * 180.0));
   buildVariable(tmp, byteStream); // wy
-  imugps_.w[1] = tmp * 2000.0 * 3.1415926 / (32768 * 180.0);
+  imugps_.w[1] = static_cast<double>(tmp) * (2000.0 * 3.1415926 / (32768.0 * 180.0));
   buildVariable(tmp, byteStream); // wz
-  imugps_.w[2] = tmp * 2000.0 * 3.1415926 / (32768 * 180.0);
+  imugps_.w[2] = static_cast<double>(tmp) * (2000.0 * 3.1415926 / (32768.0 * 180.0));
   buildVariable(tmp, byteStream);
-  imugps_.temperature = tmp / 100.0;
+  imugps_.temperature = static_cast<double>(tmp) * 0.01;
   if (byteStream.size() == 0) {
     //    std::cout << imugps_.w[0] << std::endl;
     return true;
@@ -86,21 +87,19 @@ bool Data::desGyro(ecl::PushAndPop<unsigned char> &byteStream) {
 }
 
 // Given the measurement as a float (incorrectly), convert it to decimal degrees.
-static float fixBits(float measurement, const char *name) {
-  static const float seven_zeros = 10000000;
-
-  int int_measurement = reinterpret_cast<int &>(measurement);
-  float degrees = int_measurement / seven_zeros;
-  float minutes_and_seconds = (int_measurement % (int)seven_zeros) / seven_zeros;
-  return degrees + minutes_and_seconds * 100 / 60;
+static float fixBits(const float measurement) {
+  const int int_measurement = reinterpret_cast<const int &>(measurement);
+  float degrees = int_measurement * 1e-7;
+  float minutes_and_seconds = (int_measurement % (int)1e7) * 1e-7f;
+  return degrees + minutes_and_seconds * (100.0f / 60.0f);
 }
 
 bool Data::desLola(ecl::PushAndPop<unsigned char> &byteStream) {
   buildVariable(imugps_.longtitude, byteStream);
   buildVariable(imugps_.latitude, byteStream);
 
-  imugps_.latitude = fixBits(imugps_.latitude, "latitude");
-  imugps_.longtitude = fixBits(imugps_.longtitude, "longitude");
+  imugps_.latitude = fixBits(imugps_.latitude);
+  imugps_.longtitude = fixBits(imugps_.longtitude);
   if (byteStream.size() == 0) {
     //    std::cout << imugps_.pressure << std::endl;
     return true;
@@ -109,15 +108,15 @@ bool Data::desLola(ecl::PushAndPop<unsigned char> &byteStream) {
   }
 }
 bool Data::desMag(ecl::PushAndPop<unsigned char> &byteStream) {
-  int16_t tmp;
+  int16_t tmp = 0;
   buildVariable(tmp, byteStream); // magx
-  imugps_.mag[0] = tmp;
+  imugps_.mag[0] = static_cast<double>(tmp);
   buildVariable(tmp, byteStream); // magy
-  imugps_.mag[1] = tmp;
+  imugps_.mag[1] = static_cast<double>(tmp);
   buildVariable(tmp, byteStream); // magz
-  imugps_.mag[2] = tmp;
+  imugps_.mag[2] = static_cast<double>(tmp);
   buildVariable(tmp, byteStream);
-  imugps_.temperature = tmp / 100.0;
+  imugps_.temperature = static_cast<double>(tmp) * 0.01;
   if (byteStream.size() == 0) {
     //    std::cout << imugps_.mag[0] << std::endl;
     return true;
@@ -136,15 +135,15 @@ bool Data::desPalt(ecl::PushAndPop<unsigned char> &byteStream) {
   }
 }
 bool Data::desQuat(ecl::PushAndPop<unsigned char> &byteStream) {
-  int16_t tmp;
+  int16_t tmp = 0;
   buildVariable(tmp, byteStream);
-  imugps_.q[0] = tmp / 32768.0;
+  imugps_.q[0] = static_cast<double>(tmp) * (1.0 / 32768.0);
   buildVariable(tmp, byteStream);
-  imugps_.q[1] = tmp / 32768.0;
+  imugps_.q[1] = static_cast<double>(tmp) * (1.0 / 32768.0);
   buildVariable(tmp, byteStream);
-  imugps_.q[2] = tmp / 32768.0;
+  imugps_.q[2] = static_cast<double>(tmp) * (1.0 / 32768.0);
   buildVariable(tmp, byteStream);
-  imugps_.q[3] = tmp / 32768.0;
+  imugps_.q[3] = static_cast<double>(tmp) * (1.0 / 32768.0);
   if (byteStream.size() == 0) {
     //    std::cout << imugps_.q[0] << std::endl;
     return true;
@@ -154,13 +153,13 @@ bool Data::desQuat(ecl::PushAndPop<unsigned char> &byteStream) {
 }
 bool Data::desSate(ecl::PushAndPop<unsigned char> &byteStream) {
   buildVariable(imugps_.satelites, byteStream);
-  uint16_t tmp;
+  uint16_t tmp = 0;
   buildVariable(tmp, byteStream);
-  imugps_.gpsa[0] = tmp / 100.0;
+  imugps_.gpsa[0] = static_cast<double>(tmp) * 0.01;
   buildVariable(tmp, byteStream);
-  imugps_.gpsa[1] = tmp / 100.0;
+  imugps_.gpsa[1] = static_cast<double>(tmp) * 0.01;
   buildVariable(tmp, byteStream);
-  imugps_.gpsa[2] = tmp / 100.0;
+  imugps_.gpsa[2] = static_cast<double>(tmp) * 0.01;
   if (byteStream.size() == 0) {
     //    std::cout << imugps_.gpsa[0] << std::endl;
     return true;
@@ -169,15 +168,15 @@ bool Data::desSate(ecl::PushAndPop<unsigned char> &byteStream) {
   }
 }
 bool Data::desState(ecl::PushAndPop<unsigned char> &byteStream) {
-  int16_t tmp;
+  int16_t tmp = 0;
   buildVariable(tmp, byteStream); // D0
-  imugps_.d[0] = tmp;
+  imugps_.d[0] = static_cast<uint16_t>(tmp);
   buildVariable(tmp, byteStream); // D1
-  imugps_.d[1] = tmp;
+  imugps_.d[1] = static_cast<uint16_t>(tmp);
   buildVariable(tmp, byteStream); // D2
-  imugps_.d[2] = tmp;
+  imugps_.d[2] = static_cast<uint16_t>(tmp);
   buildVariable(tmp, byteStream); // D3
-  imugps_.d[3] = tmp;
+  imugps_.d[3] = static_cast<uint16_t>(tmp);
   if (byteStream.size() == 0) {
     //    std::cout << imugps_.d[0] << std::endl;
     return true;
@@ -186,15 +185,15 @@ bool Data::desState(ecl::PushAndPop<unsigned char> &byteStream) {
   }
 }
 bool Data::desRpy(ecl::PushAndPop<unsigned char> &byteStream) {
-  int16_t tmp;
+  int16_t tmp = 0;
   buildVariable(tmp, byteStream); // roll
-  imugps_.rpy[0] = tmp * 3.1415926 / 32768;
+  imugps_.rpy[0] = static_cast<double>(tmp) * (M_PI / 32768.0);
   buildVariable(tmp, byteStream); // pitch
-  imugps_.rpy[1] = tmp * 3.1415926 / 32768;
+  imugps_.rpy[1] = static_cast<double>(tmp) * (M_PI / 32768.0);
   buildVariable(tmp, byteStream); // yaw
-  imugps_.rpy[2] = tmp * 3.1415926 / 32768;
+  imugps_.rpy[2] = static_cast<double>(tmp) * (M_PI / 32768.0);
   buildVariable(tmp, byteStream);
-  imugps_.temperature = tmp / 100.0;
+  imugps_.temperature = static_cast<double>(tmp) * 0.01;
   if (byteStream.size() == 0) {
     //    std::cout << imugps_.rpy[0] << std::endl;
     return true;
@@ -203,13 +202,13 @@ bool Data::desRpy(ecl::PushAndPop<unsigned char> &byteStream) {
   }
 }
 bool Data::desGpsv(ecl::PushAndPop<unsigned char> &byteStream) {
-  int16_t tmp;
+  int16_t tmp = 0;
   buildVariable(tmp, byteStream); // gpsh
-  imugps_.gpsh = tmp / 10.0;
+  imugps_.gpsh = static_cast<double>(tmp) * 0.1;
   buildVariable(tmp, byteStream); // gpsy
-  imugps_.gpsy = tmp / 10.0;
+  imugps_.gpsy = static_cast<double>(tmp) * 0.1;
   buildVariable(imugps_.gpsv, byteStream); // accz
-  imugps_.gpsv = imugps_.gpsv / 1000.0;
+  imugps_.gpsv *= 0.001;
   if (byteStream.size() == 0) {
     //    std::cout << imugps_.gpsv << std::endl;
     return true;
@@ -218,7 +217,7 @@ bool Data::desGpsv(ecl::PushAndPop<unsigned char> &byteStream) {
   }
 }
 bool Data::deserialise(ecl::PushAndPop<unsigned char> &byteStream) {
-  uint8_t flag;
+  uint8_t flag = 0;
   buildVariable(flag, byteStream);
   switch (flag) {
     case Flags::TIME:
@@ -264,16 +263,15 @@ bool Data::deserialise(ecl::PushAndPop<unsigned char> &byteStream) {
 void Data::build_special_variable(float &variable, ecl::PushAndPop<unsigned char> &byteStream) {
   if (byteStream.size() < 2) return;
 
-  unsigned char a, b;
+  unsigned char a = 0, b = 0;
   buildVariable(a, byteStream);
   buildVariable(b, byteStream);
-  variable = ((unsigned int)(a & 0x0f)) / 100.0;
+  variable = static_cast<float>((unsigned int)(a & 0x0f)) * 0.01f;
 
-  variable += ((unsigned int)(a >> 4)) / 10.0;
+  variable += static_cast<float>((unsigned int)(a >> 4)) * 0.1f;
 
-  variable += (unsigned int)(b & 0x0f);
-
-  variable += ((unsigned int)(b >> 4)) * 10;
+  variable += static_cast<float>((unsigned int)(b & 0x0f));
+  variable += static_cast<float>((unsigned int)(b >> 4)) * 10.0f;
 }
 
 } // namespace wit

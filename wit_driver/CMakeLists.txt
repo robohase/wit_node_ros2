@@ -24,7 +24,6 @@ ament_auto_find_build_dependencies()
 # add shared library
 ament_auto_add_library(wit_driver SHARED
   src/wit_driver.cpp
-  src/command.cpp
   src/data.cpp
   src/packet_finder.cpp
 )
