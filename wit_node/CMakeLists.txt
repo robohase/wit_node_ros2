@@ -21,8 +21,14 @@ endif()
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-ament_auto_add_executable(wit_node
+ament_auto_add_library(wit SHARED
   src/wit_node.cpp
+)
+
+rclcpp_components_register_node(
+  wit
+  PLUGIN "wit::WitNode"
+  EXECUTABLE wit_node
 )
 
 if(BUILD_TESTING)

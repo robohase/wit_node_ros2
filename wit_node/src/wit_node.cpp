@@ -110,13 +110,14 @@ namespace wit
 
     void WitNode::timer_callback()
     {
-        std_msgs::msg::Header header;
-        std_msgs::msg::Float64 yaw_msg;
-        sensor_msgs::msg::Imu imu_msg;
         tf2::Quaternion q_tf2;
-        geometry_msgs::msg::PoseStamped imu_pose;
-        sensor_msgs::msg::NavSatFix gps_msg;
-        wit_msgs::msg::ImuGpsRaw raw_msg;
+        std_msgs::msg::Header header;
+
+        std_msgs::msg::Float64::UniquePtr yaw_msg(new std_msgs::msg::Float64);
+        sensor_msgs::msg::Imu::UniquePtr imu_msg(new sensor_msgs::msg::Imu);
+        geometry_msgs::msg::PoseStamped::UniquePtr imu_pose(new geometry_msgs::msg::PoseStamped);
+        sensor_msgs::msg::NavSatFix::UniquePtr gps_msg(new sensor_msgs::msg::NavSatFix);
+        wit_msgs::msg::ImuGpsRaw::UniquePtr raw_msg(new wit_msgs::msg::ImuGpsRaw);
 
         if (this->wd_->isShutdown())
         {
@@ -129,7 +130,7 @@ namespace wit
         {
             RCLCPP_ERROR(
                 this->get_logger(),
-                "arm serial port is not connetced, please connect the arm.");
+                "serial port is not connetced, please connect.");
             rclcpp::shutdown();
         }
 
@@ -141,87 +142,80 @@ namespace wit
         wit::Data::IMUGPS data = this->wd_->getData();
 
         // yaw
-        yaw_msg.data = this->wd_->getRelatedYaw();
+        yaw_msg->data = this->wd_->getRelatedYaw();
 
         // imu
-        imu_msg.header = header;
+        imu_msg->header = header;
         // imu gyro
-        imu_msg.angular_velocity.x = data.w[0];
-        imu_msg.angular_velocity.y = data.w[1];
-        imu_msg.angular_velocity.z = data.w[2];
+        imu_msg->angular_velocity.x = data.w[0];
+        imu_msg->angular_velocity.y = data.w[1];
+        imu_msg->angular_velocity.z = data.w[2];
         // imu acc
-        imu_msg.linear_acceleration.x = data.a[0];
-        imu_msg.linear_acceleration.y = data.a[1];
-        imu_msg.linear_acceleration.z = data.a[2];
+        imu_msg->linear_acceleration.x = data.a[0];
+        imu_msg->linear_acceleration.y = data.a[1];
+        imu_msg->linear_acceleration.z = data.a[2];
 
         // imu orientarion
         q_tf2.setRPY(data.rpy[0], data.rpy[1], data.rpy[2]);
-        imu_msg.orientation = tf2::toMsg(q_tf2);
-        imu_msg.orientation_covariance =
+        imu_msg->orientation = tf2::toMsg(q_tf2);
+        imu_msg->orientation_covariance =
             {0.001, 0.0, 0.0,
             0.0, 0.001, 0.0,
             0.0, 0.0, 0.001};
-        imu_msg.angular_velocity_covariance =
+        imu_msg->angular_velocity_covariance =
             {0.00001, 0.0, 0.0,
             0.0, 0.00001, 0.0,
             0.0, 0.0, 0.00001};
-        imu_msg.linear_acceleration_covariance =
+        imu_msg->linear_acceleration_covariance =
             {0.01, 0.0, 0.0,
             0.0, 0.01, 0.0,
             0.0, 0.0, 0.01};
 
         // pose
-        imu_pose.header = header;
-        imu_pose.pose.orientation = imu_msg.orientation;
+        imu_pose->header = header;
+        imu_pose->pose.orientation = imu_msg->orientation;
 
         // gps
-        gps_msg.header = header;
-        gps_msg.altitude = data.altitude;
-        gps_msg.latitude = data.latitude;
-        gps_msg.longitude = data.longtitude;
-        gps_msg.position_covariance_type = sensor_msgs::msg::NavSatFix::COVARIANCE_TYPE_UNKNOWN;
+        gps_msg->header = header;
+        gps_msg->altitude = data.altitude;
+        gps_msg->latitude = data.latitude;
+        gps_msg->longitude = data.longtitude;
+        gps_msg->position_covariance_type = sensor_msgs::msg::NavSatFix::COVARIANCE_TYPE_UNKNOWN;
 
         // raw
-        raw_msg.header = header;
-        for (int i = 0; i < 3; ++i)
+        raw_msg->header = header;
+        for (size_t i = 0; i < 3; ++i)
         {
-            raw_msg.acc.push_back(data.a[i]);
-            raw_msg.gyro.push_back(data.w[i]);
-            raw_msg.rpy.push_back(data.rpy[i]);
-            raw_msg.mag.push_back(data.mag[i]);
-            raw_msg.dop.push_back(data.gpsa[i]);
+            raw_msg->acc.push_back(data.a[i]);
+            raw_msg->gyro.push_back(data.w[i]);
+            raw_msg->rpy.push_back(data.rpy[i]);
+            raw_msg->mag.push_back(data.mag[i]);
+            raw_msg->dop.push_back(data.gpsa[i]);
         }
-        for (int i = 0; i < 4; ++i)
+        for (size_t i = 0; i < 4; ++i)
         {
-            raw_msg.ps.push_back(data.d[i]);
-            raw_msg.quarternion.push_back(data.q[i]);
+            raw_msg->ps.push_back(data.d[i]);
+            raw_msg->quarternion.push_back(data.q[i]);
         }
-        raw_msg.sn = data.satelites;
-        raw_msg.gpsh = data.gpsh;
-        raw_msg.gpsy = data.gpsy;
-        raw_msg.gpsv = data.gpsv;
-        raw_msg.ap = data.pressure;
-        raw_msg.longtitude = data.longtitude;
-        raw_msg.altitude = data.altitude;
-        raw_msg.latitude = data.latitude;
-        raw_msg.time = data.timestamp;
-        raw_msg.temperature = data.temperature;
+        raw_msg->sn = data.satelites;
+        raw_msg->gpsh = data.gpsh;
+        raw_msg->gpsy = data.gpsy;
+        raw_msg->gpsv = data.gpsv;
+        raw_msg->ap = data.pressure;
+        raw_msg->longtitude = data.longtitude;
+        raw_msg->altitude = data.altitude;
+        raw_msg->latitude = data.latitude;
+        raw_msg->time = data.timestamp;
+        raw_msg->temperature = data.temperature;
 
         // publish
-        this->imu_pub->publish(imu_msg);
-        this->gps_pub->publish(gps_msg);
-        this->raw_data_pub->publish(raw_msg);
-        this->related_yaw_pub->publish(yaw_msg);
-        this->imu_pose_pub->publish(imu_pose);
+        this->imu_pub->publish(std::move(imu_msg));
+        this->gps_pub->publish(std::move(gps_msg));
+        this->raw_data_pub->publish(std::move(raw_msg));
+        this->related_yaw_pub->publish(std::move(yaw_msg));
+        this->imu_pose_pub->publish(std::move(imu_pose));
     }
 }
 
-int main(int argc, char *argv[])
-{
-    rclcpp::init(argc, argv);
-    rclcpp::NodeOptions node_options;
-    auto node = std::make_shared<wit::WitNode>(node_options);
-    rclcpp::spin(node);
-    rclcpp::shutdown();
-    return 0;
-}
+#include <rclcpp_components/register_node_macro.hpp>
+RCLCPP_COMPONENTS_REGISTER_NODE(wit::WitNode)
