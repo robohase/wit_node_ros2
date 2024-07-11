@@ -2,7 +2,7 @@
 
 This is unofficial ROS2 package for wit motion company imu and gps sensor.
 
-Tested with WitMotion WT901C RS232.
+Tested with WitMotion WT901C RS232 and HWT906.
 
 
 ## Build
